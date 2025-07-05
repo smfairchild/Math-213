@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculus Presentation: Triple Integral</title>
+    <!-- Load MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- Load Three.js library for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        /* --- Basic Setup & Typography --- */
+        body {
+            background-color: #1e1e1e; /* Dark background for presentation */
+            color: #dcdcdc; /* Light grey text for readability */
+            font-family: 'Cambria', 'Georgia', serif;
+            font-size: 24px; /* Large font size for classroom viewing */
+            line-height: 1.8;
+            margin: 0;
+            padding: 2em;
+            overflow: hidden; /* Hide scrollbars during presentation */
+        }
+
+        /* --- Presentation Container --- */
+        #presentation-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 80px; /* Add padding to the bottom to avoid button overlap */
+        }
+
+        /* --- Styling for each line/step --- */
+        .step {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInSlideUp 0.8s ease-out forwards;
+        }
+        
+        @keyframes fadeInSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 3D Visualization Container --- */
+        #visualization-container {
+            width: 100%;
+            height: 500px; /* Set a fixed height for the canvas */
+            margin-top: 1em;
+            border-radius: 8px;
+            overflow: hidden; /* Ensures canvas corners are rounded */
+            background-color: #252525;
+        }
+
+        /* --- Color Coding for Math Elements --- */
+        .integrand { color: #87CEEB; } /* Sky Blue for the integrand */
+        .region { color: #FFD700; } /* Gold for the region E */
+        .coords { color: #98FB98; } /* Pale Green for coordinates/bounds */
+        .calculation { color: #FFB6C1; } /* Light Pink for intermediate calculations */
+        .final-answer-text { color: #98FB98; font-weight: bold; }
+
+        /* --- Header and Final Answer Box Styling --- */
+        h1 {
+            color: #FFFFFF;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .final-answer-box {
+            border: 2px solid #98FB98;
+            padding: 1em 1.5em;
+            margin-top: 1em;
+            border-radius: 8px;
+            display: inline-block;
+            background-color: rgba(152, 251, 152, 0.1);
+        }
+        
+        /* --- Pause/Play Button Styling --- */
+        #pause-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-family: 'Arial', sans-serif;
+            background-color: #2c2c2c;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+        #pause-button:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="presentation-container">
+        <!-- The solution will be dynamically added here -->
+    </div>
+
+    <button id="pause-button">Pause</button>
+
+    <script>
+        // --- Configuration ---
+        const container = document.getElementById('presentation-container');
+        const pauseButton = document.getElementById('pause-button');
+
+        const solutionSteps = [
+            { content: `<h1>Evaluating a Triple Integral</h1>`, delay: 3000 },
+            { content: `Problem: Evaluate \\( \\iiint_E \\color{#87CEEB}{\\sqrt{x^2 + z^2}} \\, dV \\)`, delay: 5000 },
+            { content: `where \\(\\color{#FFD700}{E}\\) is the region bounded by the paraboloid \\( \\color{#FFD700}{y = x^2 + z^2} \\) and the plane \\( \\color{#FFD700}{y = 4} \\).`, delay: 8000 },
+            { content: `<h3>Visualizing the Region of Integration</h3>`, delay: 2000 },
+            // This special 'visualization' step will trigger the 3D model
+            { type: 'visualization', content: `<div id="visualization-container"></div>`, delay: 10000 },
+            { content: `<h3>Step 1: Analyze the Region and Choose Coordinates</h3>`, delay: 5000 },
+            { content: `The region \\(\\color{#FFD700}{E}\\) is a bowl-shaped paraboloid opening along the y-axis, capped by a flat plane.`, delay: 7000 },
+            { content: `The term \\( \\color{#87CEEB}{x^2 + z^2} \\) in the integrand and the boundary suggests using cylindrical coordinates.`, delay: 8000 },
+            { content: `Let's use a modified cylindrical system where \\(x = r \\cos\\theta\\), \\(z = r \\sin\\theta\\), and \\(y=y\\).`, delay: 8000 },
+            { content: `<h3>Step 2: Convert to Cylindrical Coordinates</h3>`, delay: 5000 },
+            { content: `The integrand becomes: \\( \\color{#87CEEB}{\\sqrt{x^2 + z^2}} = \\sqrt{r^2} = \\color{#87CEEB}{r} \\)`, delay: 7000 },
+            { content: `The paraboloid becomes: \\( \\color{#FFD700}{y} = (r\\cos\\theta)^2 + (r\\sin\\theta)^2 = r^2(\\cos^2\\theta + \\sin^2\\theta) = \\color{#FFD700}{r^2} \\)`, delay: 8000 },
+            { content: `The volume element becomes: \\( dV = \\color{#coords}{r \\, dy \\, dr \\, d\\theta} \\)`, delay: 7000 },
+            { content: `<h3>Step 3: Determine the Bounds of Integration</h3>`, delay: 5000 },
+            { content: `For \\(\\color{#coords}{y}\\), it is bounded below by the paraboloid and above by the plane: \\( \\color{#coords}{r^2 \\le y \\le 4} \\)`, delay: 8000 },
+            { content: `For \\(\\color{#coords}{r}\\), the radius goes from the y-axis (r=0) to the edge where the surfaces intersect.`, delay: 7000 },
+            { content: `Intersection: \\( y=r^2 \\) and \\( y=4 \\) \\( \\implies \\) \\( r^2=4 \\) \\( \\implies \\) \\( r=2 \\). So, \\( \\color{#coords}{0 \\le r \\le 2} \\).`, delay: 8000 },
+            { content: `For \\(\\color{#coords}{\\theta}\\), the region is a full circle around the y-axis, so \\( \\color{#coords}{0 \\le \\theta \\le 2\\pi} \\).`, delay: 8000 },
+            { content: `<h3>Step 4: Set Up and Evaluate the Integral</h3>`, delay: 5000 },
+            { content: `$$ \\int_{\\color{#coords}{0}}^{\\color{#coords}{2\\pi}} \\int_{\\color{#coords}{0}}^{\\color{#coords}{2}} \\int_{\\color{#coords}{r^2}}^{\\color{#coords}{4}} (\\color{#87CEEB}{r}) \\, \\color{#coords}{r \\, dy \\, dr \\, d\\theta} = \\int_{0}^{2\\pi} \\int_{0}^{2} r^2 \\int_{r^2}^{4} \\, dy \\, dr \\, d\\theta $$`, delay: 12000 },
+            { content: `Integrate with respect to \\(y\\):`, delay: 4000 },
+            { content: `$$ \\color{#FFB6C1}{\\int_{r^2}^{4} dy = [y]_{r^2}^{4} = 4 - r^2} $$`, delay: 8000 },
+            { content: `$$ \\int_{0}^{2\\pi} \\int_{0}^{2} \\color{#FFB6C1}{r^2 (4 - r^2)} \\, dr \\, d\\theta = \\int_{0}^{2\\pi} \\int_{0}^{2} \\color{#FFB6C1}{(4r^2 - r^4)} \\, dr \\, d\\theta $$`, delay: 8000 },
+            { content: `Integrate with respect to \\(r\\):`, delay: 4000 },
+            { content: `$$ \\color{#FFB6C1}{\\int_{0}^{2} (4r^2 - r^4) dr = \\left[ \\frac{4r^3}{3} - \\frac{r^5}{5} \\right]_{0}^{2}} = \\left( \\frac{4(8)}{3} - \\frac{32}{5} \\right) - 0 = \\frac{32}{3} - \\frac{32}{5} $$`, delay: 10000 },
+            { content: `$$ \\color{#FFB6C1}{\\frac{32(5) - 32(3)}{15} = \\frac{160 - 96}{15} = \\frac{64}{15}} $$`, delay: 8000 },
+            { content: `$$ \\int_{0}^{2\\pi} \\color{#FFB6C1}{\\frac{64}{15}} \\, d\\theta $$`, delay: 8000 },
+            { content: `Integrate with respect to \\(\\theta\\):`, delay: 4000 },
+            { content: `$$ \\color{#FFB6C1}{\\frac{64}{15} [\\theta]_{0}^{2\\pi}} = \\frac{64}{15} (2\\pi - 0) = \\frac{128\\pi}{15} $$`, delay: 8000 },
+            { content: `<h3>Final Answer</h3>`, delay: 4000 },
+            { content: `<div class="final-answer-box"><span class="final-answer-text">$$ \\frac{128\\pi}{15} $$</span></div>`, delay: 10000 },
+        ];
+
+        // --- 3D Visualization Function ---
+        function initThreeJSVisualization() {
+            const vizContainer = document.getElementById('visualization-container');
+            
+            // Scene
+            const scene = new THREE.Scene();
+            
+            // Camera
+            const camera = new THREE.PerspectiveCamera(75, vizContainer.clientWidth / vizContainer.clientHeight, 0.1, 1000);
+            camera.position.set(6, 5, 6);
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(vizContainer.clientWidth, vizContainer.clientHeight);
+            renderer.setClearColor(0x252525); // Match container background
+            vizContainer.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 5;
+            controls.maxDistance = 20;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // Axes Helper
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper); // X=red, Y=green, Z=blue
+
+            // --- Geometries ---
+            // Paraboloid (y = x^2 + z^2 which is y = r^2)
+            const points = [];
+            for (let i = 0; i <= 2; i += 0.1) {
+                points.push(new THREE.Vector2(i, i*i));
+            }
+            const paraboloidGeometry = new THREE.LatheGeometry(points, 32);
+            const paraboloidMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700, // Gold color from .region class
+                side: THREE.DoubleSide, 
+                wireframe: false 
+            });
+            const paraboloid = new THREE.Mesh(paraboloidGeometry, paraboloidMaterial);
+            scene.add(paraboloid);
+
+            // Plane (y = 4)
+            const planeGeometry = new THREE.CircleGeometry(2, 32); // Radius is 2
+            const planeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x87CEEB, // Sky Blue from .integrand class
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.5
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.position.y = 4;
+            plane.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+            scene.add(plane);
+
+            // Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = vizContainer.clientWidth / vizContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(vizContainer.clientWidth, vizContainer.clientHeight);
+            });
+        }
+
+        // --- Presentation Engine ---
+        let currentStep = 0;
+        let isPaused = false;
+        let timerId = null;
+
+        function runPresentation() {
+            if (isPaused) { return; }
+            if (currentStep >= solutionSteps.length) {
+                document.body.style.overflow = 'auto';
+                pauseButton.style.display = 'none';
+                clearTimeout(timerId);
+                return; 
+            }
+            const stepData = solutionSteps[currentStep];
+            const stepElement = document.createElement('div');
+            stepElement.className = 'step';
+            stepElement.innerHTML = stepData.content;
+            container.appendChild(stepElement);
+
+            // Check if this is the special visualization step
+            if (stepData.type === 'visualization') {
+                initThreeJSVisualization();
+            }
+
+            MathJax.typesetPromise([stepElement]).then(() => {
+                stepElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                currentStep++;
+                timerId = setTimeout(runPresentation, stepData.delay);
+            });
+        }
+
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            if (isPaused) {
+                clearTimeout(timerId);
+                pauseButton.textContent = 'Play';
+            } else {
+                pauseButton.textContent = 'Pause';
+                runPresentation();
+            }
+        });
+
+        window.onload = runPresentation;
+    </script>
+
+</body>
+</html>
